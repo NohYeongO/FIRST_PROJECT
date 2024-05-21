@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="memberMapper">
+  	
+  	<select id="login" parameterType="member" resultType="com.kh.semi.member.model.vo.Member">
+		SELECT
+		      MEM_NO userNo,
+		      MEM_ID userId,
+		      MEM_PWD userPwd,
+		      NICKNAME,
+		      ENROLL_DATE enrollDate,
+		      STATUS,
+		      MODIFY_DATE modifyDate
+		 FROM
+		      MEMBER
+		WHERE
+		     MEM_ID = #{userId}
+
+	</select>
+  	
+  	<insert id="insertMember" parameterType="member">
+		INSERT
+		  INTO
+		      MEMBER
+		      (
+		      MEM_NO, 
+		      MEM_ID, 
+		      MEM_PWD,
+			  NICKNAME
+		      )
+		VALUES
+		     (
+		     SEQ_MEM.NEXTVAL,
+		     #{userId},
+		     #{userPwd},
+		     #{nickName}
+		     )
+	</insert>
+	
+	
+  
+</mapper>

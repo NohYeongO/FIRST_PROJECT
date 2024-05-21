@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<!-- 
+		서버 구동과 동시에 web.xml파일을 거쳐서 바로 로딩되는 문서
+	 -->
+	 
+	 <!-- 어떤 DB에 접속할건지 정보 작성 -->
+	 <bean class="org.apache.commons.dbcp.BasicDataSource" id="dataSource" destroy-method="close">
+	 	<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+	 	<property name="url" value="jdbc:oracle:thin:@localhost:1521:xe"/>
+		<property name="username" value="ASIHANA"/>
+		<property name="password" value="ASIHANA"/>
+	 </bean>
+	 
+	 	<!-- MyBatisSpring에서 제공하는 SQL명령을 실행하기 위한 Bean 등록 -->
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactory">
+		<!-- MyBatis설정파일의 위치를 지정해서 설정 값들을 가져와야함 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+		<!-- 어떤DB에 연결하는 건지 연결을 위한 도구 참조 설정 -->
+		<property name="dataSource" ref="dataSource"/>
+		<!--  ref는 참조할때 사용 -->
+	</bean>
+	
+	
+	 <bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSession">
+	 	<!-- 매개변수 생성자 참조 설정 -->
+		<constructor-arg ref="sqlSessionFactory"/>
+	</bean>
+	
+		 <!-- 파일 업로드 관련 빈 등록 -->
+	 <bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+	 	<property name="maxUploadSize" value="100000000"/>
+	 	<property name="maxInMemorySize" value="100000000"/>
+	 </bean>
+	 
+	 
+	 
+</beans>

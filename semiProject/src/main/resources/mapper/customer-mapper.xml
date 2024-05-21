@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="customerMapper">
+
+	<resultMap type="notice" id="noticeResultSet">
+		<result property="noticeNo" column="NOTICE_NO"/>
+		<result property="noticeTitle" column="NOTICE_TITLE"/>
+		<result property="noticeContent" column="NOTICE_CONTENT"/>
+		<result property="noticeWriter" column="NOTICE_WRITER"/>
+		<result property="noticeHold" column="NOTICE_HOLD"/>
+		<result property="createDate" column="CREATE_DATE"/>
+		<result property="status" column="STATUS"/>
+	</resultMap>
+	
+	<resultMap type="noticeFile" id="noticeFileResultSet">
+		<result property="fileNo" column="FILE_NO"/>
+		<result property="boardNo" column="BOARD_NO"/>
+		<result property="boardType" column="BOARD_TYPE"/>
+		<result property="filePath" column="FILE_PATH"/>
+		<result property="originName" column="ORIGIN_NAME"/>
+		<result property="changeName" column="CHANGE_NAME"/>
+	</resultMap>
+
+	<resultMap type="qna" id="qnaResultSet">
+		<result property="qnaNo" column="Q_NO"/>
+		<result property="qnaTitle" column="QA_TITLE"/>
+		<result property="qnaContent" column="QA_CONTENT"/>
+		<result property="createDate" column="CREATE_DATE"/>
+		<result property="qnaWriter" column="QA_WRITER"/>
+		<result property="qnaStatus" column="QA_STATUS"/>
+		<association property="qnaFile" resultMap="noticeFileResultSet" />
+	</resultMap>
+
+	<resultMap type="answer" id="answerResultSet">
+		<result property="replyNo" column="REPLY_NO" />
+		<result property="qnaNo" column="QNA_NO" />
+		<result property="replyComment" column="REPLY_COMMENT" />
+		<result property="nickName" column="NICKNAME" />
+		<result property="replyWriter" column="REPLY_WRITER" />
+		<result property="commentDate" column="COMMENT_DATE" />
+		<result property="status" column="STATUS" />
+	</resultMap>
+
+
+	<select id="notice" resultMap="noticeResultSet">
+		SELECT
+		 	  NOTICE_NO,
+		 	  NOTICE_TITLE
+		  FROM
+		      TB_NOTICE
+		 WHERE
+		      ROWNUM BETWEEN 1 AND 3
+         ORDER
+		    BY
+		      NOTICE_NO DESC		      	  
+	</select>
+
+  	<select id="selectNoticeCount" resultType="_int">
+  		SELECT
+	     	  COUNT(*)
+	 	  FROM
+	     	  TB_NOTICE
+		 WHERE
+	     	  STATUS = 'Y'
+  	</select>
+
+  	<select id="noticeList" parameterType="hashmap" resultMap="noticeResultSet">
+  		SELECT
+		      NOTICE_NO,
+		      NOTICE_TITLE,
+		      CREATE_DATE,
+		      NOTICE_HOLD
+ 		  FROM
+              TB_NOTICE
+         WHERE
+              STATUS = 'Y'
+		   AND
+			  NOTICE_HOLD = 'Y'
+		  UNION ALL
+              SELECT
+                    NOTICE_NO,
+                    NOTICE_TITLE,
+                    CREATE_DATE,
+                    NOTICE_HOLD
+               FROM(SELECT
+                          NOTICE_NO,
+                          NOTICE_TITLE,
+                          CREATE_DATE,
+                          NOTICE_HOLD,
+                          ROWNUM RNUM
+                     FROM
+                         TB_NOTICE
+                    WHERE
+                         STATUS = 'Y'
+                      AND
+                         NOTICE_HOLD = 'N'
+                    ORDER
+                       BY
+                          NOTICE_NO DESC)
+		     	WHERE
+			         RNUM 
+            <choose>
+            	<when test="startNum == 1">
+			  BETWEEN 
+			  		 #{ startNum } 
+			      AND 
+			         #{ endNum } - (SELECT COUNT(*) FROM TB_NOTICE WHERE NOTICE_HOLD = 'Y')
+            	</when>
+            	<otherwise>
+			  BETWEEN 
+			  		 #{ startNum } - (SELECT COUNT(*) FROM TB_NOTICE WHERE NOTICE_HOLD = 'Y') 
+			  	  AND
+			  	     #{ endNum } + (SELECT COUNT(*) FROM TB_NOTICE WHERE NOTICE_HOLD = 'Y')
+            	</otherwise>
+            </choose>              
+  	</select>
+  	
+  	<select id="searchNoticeCount" parameterType="hashmap" resultType="_int">
+  	  	SELECT
+	     	  COUNT(*)
+	 	  FROM
+	     	  TB_NOTICE
+		 WHERE
+	     	  STATUS = 'Y'
+	     <choose>
+	     	<when test="select == 'title'">
+	     		AND NOTICE_TITLE
+	     	</when>
+	     	<otherwise>
+	     		AND NOTICE_CONTENT
+	     	</otherwise>
+	     </choose>
+	     LIKE '%' || #{keyword} || '%'
+  	</select>
+  	
+  	<select id="searchNotice" parameterType="hashmap" resultMap="noticeResultSet">
+  		SELECT
+		      NOTICE_NO,
+		      NOTICE_TITLE,
+		      CREATE_DATE,
+		      NOTICE_HOLD
+ 		  FROM
+              TB_NOTICE
+         WHERE
+              STATUS = 'Y'
+         <choose>
+         	<when test="select == 'title'">
+         		AND NOTICE_TITLE
+         	</when>
+         	<otherwise>
+         		AND NOTICE_CONTENT
+         	</otherwise>
+         </choose>
+           LIKE '%' || #{keyword} || '%'
+          ORDER
+             BY
+               NOTICE_NO DESC      
+  	</select>
+
+	<select id="noticeDetail" parameterType="_int" resultMap="noticeResultSet">
+		SELECT
+		      NOTICE_NO,
+		      NOTICE_TITLE,
+		      NOTICE_CONTENT,
+		      CREATE_DATE
+		  FROM
+		      TB_NOTICE
+		 WHERE
+		      NOTICE_NO = #{noticeNo}
+		   AND
+		      STATUS = 'Y'            
+	</select>
+	
+	<select id="noticeFile" parameterType="hashmap" resultMap="noticeFileResultSet">
+		SELECT
+		      FILE_NO,
+		      BOARD_NO,
+		      FILE_PATH,
+		      ORIGIN_NAME,
+		      CHANGE_NAME,
+		      BOARD_TYPE
+		  FROM
+		      TB_FILE
+		 WHERE
+		      BOARD_NO = #{noticeNo}
+		   AND
+		      BOARD_TYPE = #{boardType}           
+	</select>
+	
+	<insert id="insertNotice" parameterType="notice">
+  		INSERT 
+		  INTO 
+		      TB_NOTICE
+		 VALUES     
+		      (
+		       SEQ_NOTI.NEXTVAL,
+		       #{noticeTitle},
+		       #{noticeContent},
+		       #{noticeWriter},
+		       #{noticeHold},
+		       SYSDATE,
+		       'Y'
+		       )
+	</insert>
+	
+	
+	<select id="selectQnaCount" resultType="_int">
+		SELECT
+			  COUNT(*)
+	      FROM
+	          TB_QNA
+	     WHERE
+	          STATUS = 'Y'     		  
+	</select>
+
+	<select id="qnaList" resultMap="qnaResultSet">
+		SELECT
+		      Q_NO,
+		      QA_TITLE,
+		      QA_CONTENT,
+		      QA_STATUS,
+		      CREATE_DATE
+		  FROM
+		      TB_QNA
+		 WHERE
+		      STATUS = 'Y'
+		 ORDER
+		    BY
+		      Q_NO DESC          
+	</select>
+	
+	<select id="searchQnaList" parameterType="hashmap" resultMap="qnaResultSet">
+  		SELECT
+		      Q_NO,
+		      QA_TITLE,
+		      QA_CONTENT,
+		      QA_STATUS,
+		      CREATE_DATE
+ 		  FROM
+		      TB_QNA
+         WHERE
+              STATUS = 'Y'
+         <choose>
+         	<when test="select == 'title'">
+         		AND QA_TITLE
+         	</when>
+         	<otherwise>
+         		AND QA_CONTENT
+         	</otherwise>
+         </choose>
+           LIKE '%' || #{keyword} || '%'
+          ORDER
+             BY
+               Q_NO DESC      
+  	</select>
+  	
+  	<select id="searchQnaCount" parameterType="hashmap" resultType="_int">
+  	  	SELECT
+	     	  COUNT(*)
+	 	  FROM
+	     	  TB_QNA
+		 WHERE
+	     	  STATUS = 'Y'
+	     <choose>
+	     	<when test="select == 'title'">
+	     		AND QA_TITLE
+	     	</when>
+	     	<otherwise>
+	     		AND QA_CONTENT
+	     	</otherwise>
+	     </choose>
+	     LIKE '%' || #{keyword} || '%'
+  	</select>
+  	
+  	<insert id="insertQna" parameterType="qna">
+  		INSERT 
+		  INTO 
+		      TB_QNA(
+		             Q_NO,
+		             QA_TITLE,
+		             QA_CONTENT,
+		             QA_WRITER
+		             )
+		      VALUES     
+		            (
+		            SEQ_QNA.NEXTVAL,
+					#{qnaTitle},
+					#{qnaContent},
+					#{qnaWriter}
+		            )
+  	</insert>
+  	
+  	<insert id="insertFile" parameterType="noticeFile">
+  		INSERT
+		  INTO
+		      TB_FILE
+		     (
+			 FILE_NO,
+			 BOARD_NO,
+			 FILE_PATH,
+			 ORIGIN_NAME,
+			 CHANGE_NAME,
+			 BOARD_TYPE
+		  	 )
+		VALUES
+		      (
+		      SEQ_FILE.NEXTVAL,
+		      <choose>
+		      	<when test="boardNo != 0">
+		      		#{boardNo},
+		      	</when>
+		      	<otherwise>
+		      		<choose>
+		      			<when test="boardType == 8">
+				      		SEQ_QNA.CURRVAL,
+		      			</when>
+		      			<otherwise>
+		      				SEQ_NOTI.CURRVAL,
+		      			</otherwise>
+		      		</choose>
+		      	</otherwise>
+		      </choose>
+		      #{filePath},
+		      #{originName},
+		      #{changeName},
+		      #{boardType}
+		      )     
+  	</insert>
+  	
+  	<select id="qnaDetail" parameterType="_int" resultMap="qnaResultSet">
+  		SELECT
+  			  Q_NO,
+		      ORIGIN_NAME,
+		      CHANGE_NAME,
+		      FILE_PATH,
+		      QA_TITLE,
+		      QA_CONTENT,
+		      CREATE_DATE,
+		      QA_WRITER,
+		      QA_STATUS
+		  FROM
+		      TB_QNA
+		  LEFT  
+		  JOIN
+		      TB_FILE ON (BOARD_NO = Q_NO)
+		   AND
+		      BOARD_TYPE = 8
+		 WHERE
+		      Q_NO = #{qnaNo}
+  	</select>
+
+	<delete id="deleteQna" parameterType="_int">
+		DELETE
+		  FROM
+		      TB_QNA
+		 WHERE
+		      Q_NO = #{qnaNo}
+	</delete>
+	
+	<delete id="deleteFile" parameterType="hashmap">
+		DELETE
+		  FROM
+		      TB_FILE
+		 WHERE
+		      BOARD_TYPE = #{boardType}
+		   AND
+		      BOARD_NO = #{boardNo}        
+	</delete>
+	
+	<update id="updateQna" parameterType="qna">
+		UPDATE
+		      TB_QNA
+		   SET
+		      QA_TITLE = #{qnaTitle},
+		      QA_CONTENT = #{qnaContent}
+		 WHERE
+		      Q_NO = #{qnaNo}   
+	</update>
+	
+	<update id="updateFile" parameterType="noticeFile">
+		UPDATE
+		      TB_FILE
+		   SET
+		      FILE_PATH = #{filePath},
+			  ORIGIN_NAME = #{originName},
+			  CHANGE_NAME = #{changeName}
+	     WHERE
+	          BOARD_NO = #{boardNo}
+	       AND
+	          BOARD_TYPE = #{boardType}   	    
+	</update>
+	
+	<select id="replyList" resultMap="answerResultSet">
+		SELECT
+		      REPLY_NO,
+		      QNA_NO,
+		      REPLY_COMMENT,
+		      NICKNAME,
+		      REPLY_WRITER,
+		      COMMENT_DATE,
+		      T.STATUS
+		  FROM
+		      TB_ANSWER T,
+		      MEMBER
+		 WHERE
+		      MEM_NO = REPLY_WRITER
+           AND
+		      QNA_NO = #{qnaNo}
+		 ORDER
+		    BY
+		      COMMENT_DATE DESC	
+	</select>
+
+	<insert id="replyInsert" parameterType="answer">
+		INSERT
+		  INTO
+		      TB_ANSWER
+		      (
+		      REPLY_NO,
+		      QNA_NO,
+		      REPLY_COMMENT,
+		      REPLY_WRITER,
+		      STATUS
+		      )
+		 VALUES
+		      (
+		      SEQ_ANSWER.NEXTVAL,
+		      #{qnaNo},
+		      #{replyComment},
+		      #{replyWriter},
+		      'N'		
+			  )
+	</insert>
+	
+	<update id="replyCompleted" parameterType="_int">
+		UPDATE
+		      TB_QNA
+		   SET
+		      QA_STATUS = 'Y'
+		 WHERE
+		      Q_NO = #{qnaNo}  	
+	</update>
+	
+	<update id="replyUpdate" parameterType="answer">
+		UPDATE
+		      TB_ANSWER
+		   SET
+		      REPLY_COMMENT = #{replyComment}
+		 WHERE
+		      REPLY_NO = #{replyNo}      
+	</update>
+	
+	<delete id="replyDelete" parameterType="answer">
+		DELETE
+		  FROM 
+		      TB_ANSWER
+		 WHERE
+		      REPLY_NO = #{replyNo}    
+	</delete>
+	
+</mapper>
