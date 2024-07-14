@@ -18,4 +18,4 @@
 - Tool : Spring Tool Suite3(3.9.13.RELEASE), VScode 1.88.1, Oracle SQL Developer 21.2.1.204
 - 라이브러리 : ojdbc6, lombok(1.18.12), Apache Commons(1.3.3), Json-simple(1.1.1) , Gson(2.8..5)
 
-{ 처음 프로젝트는 이클립스를 통해 개발했지만 spring을 배워 담당기능 코드를 spring으로 변경했습니다. }
+{ 처음 프로젝트는 이클립스를 통해 개발했고 JDBC를 통해 개발 했지만 spring, MyBatis을 배워 담당기능 코드를 spring Tool을 활용해 개발했습니다. }
